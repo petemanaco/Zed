@@ -31,7 +31,7 @@ CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
-
+static const int FORK_JUNE14 = 95000;
 uint256 hashGenesisBlock("0x7f020bb968e46bc26171772042d20010e05b8b3999dae6d45ee514770622ed7d");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // ZedCoin: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;
@@ -846,12 +846,12 @@ int64 static GetBlockValue(int nHeight, int64 nFees, uint256 prevHash)
 	{
 		nSubsidy = 1200000 * COIN; //1.2mil (1%)
 		return nSubsidy + nFees;
-	} 
+	}
 
 	// Bonus Week
 	int day = nHeight / 1440 + 1;
 	// printf(">> height = %d, phase = %f, day = %d\n", nHeight, phase, day);
-	
+
 	if(day == 1)
 	{
 		nSubsidy *= 2;
@@ -876,8 +876,21 @@ int64 static GetBlockValue(int nHeight, int64 nFees, uint256 prevHash)
 	{
 		nSubsidy *= 2;
 	}
-	// Subsidy is cut in half every 525600 blocks, which will occur every year
-	nSubsidy >>= (nHeight / 525600); 
+
+	if (nHeight > FORK_JUNE14 && nHeight <= FORK_JUNE14 + 6000)
+	{
+		nSubsidy = 44 * COIN;
+		unsigned int nHeightTemp = nHeight - FORK_JUNE14;
+		nSubsidy >>= (nHeightTemp / 2000);
+		return nSubsidy + nFees;
+
+	}
+
+	if (nHeight > FORK_JUNE14 + 6000)
+	{
+		nSubsidy = 5 * COIN;
+		return nSubsidy + nFees;
+	}
 
     if (nSubsidy < nMinSubsidy)
         nSubsidy = nMinSubsidy;
@@ -947,7 +960,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     }
 
 
-	
+
  // ZedCoin: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
     int blockstogoback = nInterval-1;
@@ -967,7 +980,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
     printf("  nActualTimespan = %"PRI64d"  before bounds\n", nActualTimespan);
 
 
-	if(pindexLast->nHeight+1 > 10000)	
+	if(pindexLast->nHeight+1 > 10000)
 	{
 		if (nActualTimespan < nTargetTimespan/4)
 			nActualTimespan = nTargetTimespan/4;
@@ -982,7 +995,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 		if (nActualTimespan > nTargetTimespan*4)
 			nActualTimespan = nTargetTimespan*4;
 	}
-	else 
+	else
 	{
 		if (nActualTimespan < nTargetTimespan/16)
 			nActualTimespan = nTargetTimespan/16;
@@ -2126,7 +2139,7 @@ bool LoadBlockIndex(bool fAllowNew)
                 }
             }
 
- 
+
 			printf("block.GetHash = %s\n", block.GetHash().ToString().c_str());
         }
 
@@ -2443,7 +2456,7 @@ bool static AlreadyHave(CTxDB& txdb, const CInv& inv)
 // The message start string is designed to be unlikely to occur in normal data.
 // The characters are rarely used upper ascii, not valid as UTF-8, and produce
 // a large 4-byte int at any alignment.
-unsigned char pchMessageStart[4] = { 0xc0, 0xdb, 0xf1, 0xfd }; 
+unsigned char pchMessageStart[4] = { 0xc0, 0xdb, 0xf1, 0xfd };
 
 
 bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv)

@@ -910,6 +910,7 @@ static const int64 nInterval = nTargetTimespan / nTargetSpacing;	// ZedCoin: 30 
 //
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 {
+	int nHeight = pindexLast->nHeight + 1;
     // Testnet has min-difficulty blocks
     // after nTargetSpacing*2 time between blocks:
     if (fTestNet && nTime > nTargetSpacing*2)
@@ -919,10 +920,21 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
     bnResult.SetCompact(nBase);
     while (nTime > 0 && bnResult < bnProofOfWorkLimit)
     {
-        // Maximum 400% adjustment...
-        bnResult *= 4;
-        // ... in best-case exactly 4-times-normal target time
-        nTime -= nTargetTimespan*4;
+		if (nHeight > FORK_JUNE14)
+		{
+            // Maximum 100% adjustment...
+            bnResult *= 1;
+            // ... in best-case exactly 1-times-normal target time
+            nTime -= nTargetTimespan*1;
+	    }
+	    else
+	    {
+            // Maximum 400% adjustment...
+            bnResult *= 4;
+            // ... in best-case exactly 4-times-normal target time
+            nTime -= nTargetTimespan*4;
+	    }
+
     }
     if (bnResult > bnProofOfWorkLimit)
         bnResult = bnProofOfWorkLimit;
@@ -931,6 +943,9 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
+	if (pindexLast->nHeight+1 > FORK_JUNE14)
+        nInterval = nInterval/6;
+
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 
     // Genesis block
@@ -963,6 +978,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
 
  // ZedCoin: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
+
     int blockstogoback = nInterval-1;
     if ((pindexLast->nHeight+1) != nInterval)
         blockstogoback = nInterval;

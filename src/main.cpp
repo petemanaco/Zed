@@ -31,7 +31,7 @@ CTxMemPool mempool;
 unsigned int nTransactionsUpdated = 0;
 
 map<uint256, CBlockIndex*> mapBlockIndex;
-static const int FORK_JUNE14 = 95000;
+static const int FORK_JUNE14 = 97000;
 uint256 hashGenesisBlock("0x7f020bb968e46bc26171772042d20010e05b8b3999dae6d45ee514770622ed7d");
 static CBigNum bnProofOfWorkLimit(~uint256(0) >> 20); // ZedCoin: starting difficulty is 1 / 2^12
 CBlockIndex* pindexGenesisBlock = NULL;

@@ -910,7 +910,7 @@ static const int64 nInterval = nTargetTimespan / nTargetSpacing;	// ZedCoin: 30 
 //
 unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 {
-	int nHeight = pindexLast->nHeight + 1;
+	int nHeight = pindexBest->nHeight;
     // Testnet has min-difficulty blocks
     // after nTargetSpacing*2 time between blocks:
     if (fTestNet && nTime > nTargetSpacing*2)
@@ -943,8 +943,10 @@ unsigned int ComputeMinWork(unsigned int nBase, int64 nTime)
 
 unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBlock *pblock)
 {
-	if (pindexLast->nHeight+1 > FORK_JUNE14)
-        nInterval = nInterval/6;
+
+	static int64 nInterval2 = nInterval;
+	if (pindexBest->nHeight > FORK_JUNE14)
+        nInterval2 = nInterval/6;
 
     unsigned int nProofOfWorkLimit = bnProofOfWorkLimit.GetCompact();
 
@@ -953,7 +955,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
         return nProofOfWorkLimit;
 
 	// Only change once per interval
-    if ((pindexLast->nHeight+1) % nInterval != 0)
+    if ((pindexLast->nHeight+1) % nInterval2 != 0)
     {
         // Special difficulty rule for testnet:
         if (fTestNet)
@@ -966,7 +968,7 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
             {
                 // Return the last non-special-min-difficulty-rules-block
                 const CBlockIndex* pindex = pindexLast;
-                while (pindex->pprev && pindex->nHeight % nInterval != 0 && pindex->nBits == nProofOfWorkLimit)
+                while (pindex->pprev && pindex->nHeight % nInterval2 != 0 && pindex->nBits == nProofOfWorkLimit)
                     pindex = pindex->pprev;
                 return pindex->nBits;
             }
@@ -979,9 +981,9 @@ unsigned int static GetNextWorkRequired(const CBlockIndex* pindexLast, const CBl
  // ZedCoin: This fixes an issue where a 51% attack can change difficulty at will.
     // Go back the full period unless it's the first retarget after genesis. Code courtesy of Art Forz
 
-    int blockstogoback = nInterval-1;
-    if ((pindexLast->nHeight+1) != nInterval)
-        blockstogoback = nInterval;
+    int blockstogoback = nInterval2-1;
+    if ((pindexLast->nHeight+1) != nInterval2)
+        blockstogoback = nInterval2;
 
 // Go back by what we want to be 14 days worth of blocks
     const CBlockIndex* pindexFirst = pindexLast;
